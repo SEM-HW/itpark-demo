@@ -25,6 +25,8 @@ public:
   void sendPacket(uint8_t buffer[], uint8_t bufferSize);
   std::pair<uint8_t*, uint8_t> readPacket(uint16_t timeout=5);
   std::pair<uint8_t*, uint8_t> requestPacket(uint8_t buffer[], uint8_t bufferSize, uint16_t timeout=500);
+  // uint8_t * incomingBytes = (uint8_t *)malloc(MAX_INCOMMING_LEN * sizeof(uint8_t));
+  uint8_t incomingBytes[MAX_INCOMMING_LEN] = {0};
 };
 
 

@@ -6,7 +6,13 @@ Device::Device() { Serial.println("Device instance initilized..."); }
 
 WiFiClient* Device::getClient() { return &client; }
 
-void Device::msgHandler(NATS::msg msg) { Serial.println(msg.data); }
+void Device::msgHandler(NATS::msg msg) { 
+  Serial.println(msg.data);
+  std::pair<uint8_t*, uint8_t> res = jsonToBuffer(msg.data);
+
+  if (res.second)
+    mega.sendPacket(res.first, res.second);
+}
 
 void Device::setNats(NATS* nats) { this->nats = nats; }
 
@@ -76,28 +82,31 @@ void requestCB(NATS::msg msg) {
 void Device::loop() {
   std::pair<uint8_t*, uint8_t> p = mega.readPacket();
   if (p.second) {
-    #ifdef DEBUG
-    Serial.println("STATUS");
-    Serial.println(p.first[4]);
-    #endif
     StaticJsonDocument<200> doc = bufferToJson(p.first);
     doc["time"] = getTime();
 
     String s;
     serializeJson(doc, s);
 
-    uint8_t cmd = p.first[3];
+    uint8_t cmd = p.first[2];
 
     if(cmd == Commands::SendParkingStatus || Commands::SendTransInfo)
     {
-      this->topic.remove(0,3);
-      this->topic = (String)NATS_TOPIC + this->topic;
+      
+      if(strncmp(topic.c_str(),"evm",3) == 0)
+      {
+        this->topic.remove(0,3);
+        this->topic = (String)NATS_TOPIC + this->topic;
+      }
     }
 
     if(cmd == RESP_EVSE_STATE || cmd == RESP_CARD_READ || cmd == RESP_CHARGING_INFO)
     {
-      this->topic.remove(0,8);
-      this->topic = (String)"evm" + this->topic;
+      if(strncmp(topic.c_str(),"qparking",8) == 0)
+      {
+        this->topic.remove(0,8);
+        this->topic = (String)"evm" + this->topic;
+      }
     }
 
     if (cmd == Commands::SendParkingStatus) {
@@ -113,35 +122,17 @@ void Device::loop() {
       // );
 
       // mega.sendPacket(res.first, res.second);
-      this->topic += ".PARKING_STATE";
-      nats->publish(this->topic.c_str(), s);
-      this->topic.remove(35,14);
-      return;
+      nats->publish((this->topic += ".PARKING_STATE").c_str(), s);
     }
     else if (cmd == Commands::SendTransInfo)
-    {
-      this->topic += ".TRANS_INFO_REQUEST";
-      nats->request((const char*)this->topic.c_str(), s, requestCB);
-      this->topic.remove(35,19);
-      // qparking.F255B594-94:B5:55:F2:6A:7C
-    }
+      nats->request((this->topic += ".TRANS_INFO_REQUEST").c_str(), s, requestCB);
+    
+    // EVM
     else if (RESP_EVSE_STATE == cmd)
-    {
-      this->topic += ".RESP_EVSE_STATE";
-      nats->publish(this->topic.c_str(), s);
-      this->topic.remove(35,16);
-    }
+      nats->publish((this->topic += ".RESP_EVSE_STATE").c_str(), s);
     else if (RESP_CARD_READ == cmd)
-    {
-      this->topic += ".RESP_CARD_READ";
-      nats->request((const char*)this->topic.c_str(), s, requestCB);
-      this->topic.remove(35,15);
-    }
+      nats->request((this->topic += ".RESP_CARD_READ").c_str(), s, requestCB);
     else if (RESP_CHARGING_INFO == cmd)
-    {
-      this->topic += ".RESP_CHARGING_INFO";
-      nats->publish(this->topic.c_str(), s);
-      this->topic.remove(35,19);
-    }
+      nats->publish((this->topic += ".RESP_CHARGING_INFO").c_str(), s);
   }
 }

@@ -7,10 +7,18 @@
 #define WIFI_SSID "SEM-HW"
 #define WIFI_PSK "janjinshugam123"
 
+// #define WIFI_SSID "SEM-IOT-NETWORK"
+// #define WIFI_PSK "janjinshugam123"
+
 #define NATS_URL_SERVER "nats.clix.mn"
 #define NATS_NAME "qparking:device"
 #define NATS_PSWD "Cd4l1vJC4^2G3Cjh4$mVm"
 #define NATS_TOPIC "qparking"
+
+// #define NATS_URL_SERVER "nats.clix.mn"
+// #define NATS_NAME "epass:user"
+// #define NATS_PSWD "71|71)2b0iDs~z9~rF149-8U"
+// #define NATS_TOPIC "evm"
 
 #define NTP_SERVER "pool.ntp.org"           // just a ntp server
 #define GMT_OFFSET 8                        // Ulaanbaatar timezone
@@ -73,8 +81,14 @@ enum ParkingStatus
 #define Over_current_shutdown       0x0B
 #define Unknown                     0x00
 
-// Charging status
+// Payment status
+#define SUCCESS                     0xAA
+#define NOT_REGISTERED              0xE0    
+#define CARD_BALANCE_ERROR          0xE1        
+#define SERVER_SIDE_ERROR           0xE2        
+#define FAILED                      0xE3
 
+// Charging status
 #define Success                     0x01
 #define Charging                    0x02
 #define Transaction_time_error      0xE1

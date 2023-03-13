@@ -4,22 +4,13 @@
 
 void buildSendParkingStatus(uint8_t* buff, StaticJsonDocument<200>& doc)
 {
-  if(buff[4] == UNLOCKED)
-    doc["status"] = "UNLOCKED";
-
-  if(buff[4] == LOCKED)
-    doc["status"] = "LOCKED";
-
-  if(buff[4] == UNLOCKING)
-    doc["status"] = "UNLOCKING";
-
-  if(buff[4] == LOCKING)
-    doc["status"] = "LOCKING";
-
-  if(buff[4] == Error)
-    doc["status"] = "ERROR";
+  if(buff[4] == UNLOCKED)   doc["status"] = "UNLOCKED";
+  if(buff[4] == LOCKED)     doc["status"] = "LOCKED";
+  if(buff[4] == UNLOCKING)  doc["status"] = "UNLOCKING";
+  if(buff[4] == LOCKING)    doc["status"] = "LOCKING";
+  if(buff[4] == Error)      doc["status"] = "ERROR";
     
-  doc["price"] =  ((buff[7] << 8) | buff[6]);
+  doc["price"] =  ((buff[6] << 8) | buff[7]);
 }
 
 
@@ -37,15 +28,47 @@ void buildSendTransInfo(uint8_t* buff, StaticJsonDocument<200>& doc)
 }
 
 // EVM
+
+String evmState(uint8_t state)
+{
+  if(state == Sleeping)                   return "Sleeping";
+  if(state == Disabled)                   return "Disabled";
+  if(state == State_A)                    return "State_A";
+  if(state == State_B)                    return "State_B";
+  if(state == State_C)                    return "State_C";
+  if(state == State_D)                    return "State_D";
+  if(state == Diode_check_failed)         return "Diode check failed";
+  if(state == No_ground)                  return "No ground";
+  if(state == Bad_ground)                 return "Bad ground";
+  if(state == Stuck_relay)                return "Stuck relay";
+  if(state == GFI_failed)                 return "GFI failed";
+  if(state == Over_temperature_shutdown)  return "Over temperature shutdown";
+  if(state == Over_current_shutdown)      return "Over current shutdown";
+  if(state == Unknown)                    return "Unknown";
+  return "Unknown";
+}
+
+String evmStatus(uint8_t status)
+{
+  if(status == Success)                   return "Success";
+  if(status == Charging)                  return "Charging";
+  if(status == Transaction_time_error)    return "Transaction time error";  
+  if(status == User_card_balance_error)   return "User card balance error";
+  if(status == EVSE_error)                return "EVSE error";
+  if(status == Card_error)                return "Card error";
+  if(status == Charge_unknown)            return "Unknown";
+  return "Unknown";
+}
+
 // TODO: CHANGE NUMERICALS VALUES TO STRING
 void buildResp_evse(uint8_t* buff, StaticJsonDocument<200>& doc)
 {
-  doc["state"] = buff[4];
+  doc["state"] = evmState(buff[4]);
 }
 
 void buildResp_card(uint8_t* buff, StaticJsonDocument<200>& doc)
 {
-  doc["state"] = buff[4];
+  doc["state"] = evmState(buff[4]);
   
   String cardUid;
   for (int i=5; i<9; ++i) 
@@ -60,7 +83,7 @@ void buildResp_card(uint8_t* buff, StaticJsonDocument<200>& doc)
 
 void buildResp_charging(uint8_t* buff, StaticJsonDocument<200>& doc)
 {
-  doc["state"] = buff[4];
+  doc["state"] = evmState(buff[4]);
 
   String cardUid;
   for (int i=5; i<9; ++i) 
@@ -72,34 +95,15 @@ void buildResp_charging(uint8_t* buff, StaticJsonDocument<200>& doc)
 
   doc["cardUid"] = cardUid;
 
-  doc["price"] = ((buff[11] << 8) | buff[10]);
+  doc["price"] = ((buff[10] << 8) | buff[11]);
 
-  doc["energy"] = ((buff[13] << 8) | buff[12]);
+  doc["energy"] = ((buff[12] << 8) | buff[13]);
 
-  doc["amount"] = ((buff[17] << 24) | (buff[16] << 16) | (buff[15] << 8) | buff[14]);
+  doc["amount"] = ((buff[14] << 24) | (buff[15] << 16) | (buff[16] << 8) | buff[17]);
 
-  doc["accumulated"] = ((buff[25] << 56) | (buff[24] << 48) | (buff[23] << 40) | (buff[22] << 32) | (buff[21] << 24) | (buff[20] << 16) | (buff[19] << 8) | buff[18]);
+  doc["accumulated"] = ((buff[18] << 56) | (buff[19] << 48) | (buff[20] << 40) | (buff[21] << 32) | (buff[22] << 24) | (buff[23] << 16) | (buff[24] << 8) | buff[25]);
 
-  if(buff[26] == Success)
-    doc["status"] = "Success";
-
-  if(buff[26] == Charging)
-    doc["status"] = "Charging";
-
-  if(buff[26] == Transaction_time_error)
-    doc["status"] = "Transaction time error";  
-
-  if(buff[26] == User_card_balance_error)
-    doc["status"] = "User card balance error";
-
-  if(buff[26] == EVSE_error)
-    doc["status"] = "EVSE error";
-
-  if(buff[26] == Card_error)
-    doc["status"] = "Card error";
-
-  if(buff[26] == Charge_unknown)
-    doc["status"] = "Unknown";  
+  doc["status"] = evmStatus(buff[26]); 
 }
 
 StaticJsonDocument<200> bufferToJson(uint8_t* buff)
@@ -171,8 +175,8 @@ std::pair<uint8_t*, uint8_t> wrapStartCharging(uint8_t * cardUid, uint32_t cardB
 
   static uint8_t ans[len] = { ABCD, START_CHARGING, START_CHARGING_LEN, 
                               cardUid[0], cardUid[1], cardUid[2], cardUid[3],
-                              (cardBalance & 0xFF000000) >> 24, (cardBalance & 0xFF0000) >> 16, (cardBalance & 0xFF00) >> 8, (cardBalance & 0xFF),
-                              ((unitPrice & 0xFF00) >> 8), (unitPrice & 0xFF),
+                              (cardBalance & (0xFFU << 24)) >> 24, (cardBalance & (0xFFU << 16)) >> 16, (cardBalance & (0xFFU << 8)) >> 8, (cardBalance & 0xFFU),
+                              ((unitPrice & (0xFFU << 8)) >> 8), (unitPrice & 0xFFU),
                               0x00, 0x00, DCBA };
   insertCRC(ans, len);
   return std::make_pair(ans, len);
@@ -184,11 +188,11 @@ std::pair<uint8_t*, uint8_t> wrapTransAck(uint8_t state, uint8_t * cardUid, uint
   static uint8_t ans[len] = { ABCD, TRANSACTION_ACK, TRANSACTION_ACK_LEN, 
                               state, 
                               cardUid[0], cardUid[1], cardUid[2], cardUid[3], 
-                              ((unitPrice & 0xFF00) >> 8), (unitPrice & 0xFF), 
-                              ((energy & 0xFF00) >> 8), (energy & 0xFF), 
-                              (amount & 0xFF000000) >> 24, (amount & 0xFF0000) >> 16, (amount & 0xFF00) >> 8, (amount & 0xFF),
-                              (accumulated & 0xFF00000000000000) >> 56, (accumulated & 0xFF000000000000) >> 48, (accumulated & 0xFF0000000000) >> 40, (accumulated & 0xFF00000000) >> 32,
-                              (accumulated & 0xFF000000) >> 24,         (accumulated & 0xFF0000) >> 16,         (accumulated & 0xFF00) >> 8,          (accumulated & 0xFF),
+                              ((unitPrice & (0xFFU << 8)) >> 8), (unitPrice & 0xFFU), 
+                              ((energy & (0xFFU << 8)) >> 8), (energy & 0xFFU), 
+                              (amount & (0xFFU << 24)) >> 24, (amount & (0xFFU << 16)) >> 16, (amount & (0xFFU << 8)) >> 8, (amount & 0xFFU),
+                              (accumulated & (0xFFU << 56)) >> 56, (accumulated & (0xFFU << 48)) >> 48, (accumulated & (0xFFU << 40)) >> 40, (accumulated & (0xFFU << 32)) >> 32,
+                              (accumulated & (0xFFU << 24)) >> 24, (accumulated & (0xFFU << 16)) >> 16, (accumulated & (0xFFU << 8)) >> 8,   (accumulated & 0xFFU),
                               status,
                               0x00, 0x00, DCBA };
   insertCRC(ans, len);
@@ -242,19 +246,19 @@ std::pair<uint8_t*, uint8_t> jsonToBuffer(const char* s) {
   {
     uint8_t status = Error;
 
-    if(strncmp(doc["status"],"UNLOCKED",9) == 0)
+    if(doc["status"] == "UNLOCKED")
       status = UNLOCKED;
 
-    if(strncmp(doc["status"],"LOCKED",7) == 0)
+    if(doc["status"] == "LOCKED")
       status = LOCKED;
 
-    if(strncmp(doc["status"],"UNLOCKING",10) == 0)
+    if(doc["status"] == "UNLOCKING")
       status = UNLOCKING;
 
-    if(strncmp(doc["status"],"LOCKING",8) == 0)
+    if(doc["status"] == "LOCKING")
       status = LOCKING;
       
-    if(strncmp(doc["status"],"ERROR",6) == 0)
+    if(doc["status"] == "ERROR")
       status = Error;
 
     return wrapChangeParkingStatus(status);
@@ -263,18 +267,18 @@ std::pair<uint8_t*, uint8_t> jsonToBuffer(const char* s) {
 
   if (doc.containsKey("paymentStatus"))
   {
-    uint8_t status = 0xFF;
+    uint8_t status = FAILED;
     
-    if(strncmp(doc["status"],"SUCCESS",8) == 0)
-      status = 0xAA;
-    if(strncmp(doc["status"],"NOT_REGISTERED",15) == 0)
-      status = 0xE0;
-    if(strncmp(doc["status"],"CARD_BALANCE_ERROR",19) == 0)
-      status = 0xE1;
-    if(strncmp(doc["status"],"SERVER_SIDE_ERROR",18) == 0)
-      status = 0xE2;
-    if(strncmp(doc["status"],"FAILED",7) == 0)
-      status = 0xFF;
+    if(doc["status"] == "SUCCESS")
+      status = SUCCESS;
+    if(doc["status"] == "NOT_REGISTERED")
+      status = NOT_REGISTERED;
+    if(doc["status"] == "CARD_BALANCE_ERROR")
+      status = CARD_BALANCE_ERROR;
+    if(doc["status"] == "SERVER_SIDE_ERROR")
+      status = SERVER_SIDE_ERROR;
+    if(doc["status"] == "FAILED")
+      status = FAILED;
 
     return wrapTransInfo(status);
   }
@@ -294,43 +298,43 @@ std::pair<uint8_t*, uint8_t> jsonToBuffer(const char* s) {
   {
     uint8_t status = Unknown;
 
-    if(strncmp(doc["state"],"Sleeping",8) == 0)
+    if(doc["state"] == "Sleeping")
       status = Sleeping;
 
-    if(strncmp(doc["state"],"Disabled",8) == 0)
+    if(doc["state"] == "Disabled")
       status = Disabled;
 
-    if(strncmp(doc["state"],"State_A",7) == 0)
+    if(doc["state"] == "State_A")
       status = State_A;
 
-    if(strncmp(doc["state"],"State_B",7) == 0)
+    if(doc["state"] == "State_B")
       status = State_B;
       
-    if(strncmp(doc["state"],"State_C",7) == 0)
+    if(doc["state"] == "State_C")
       status = State_C;
     
-    if(strncmp(doc["state"],"State_D",7) == 0)
+    if(doc["state"] == "State_D")
       status = State_D;
 
-    if(strncmp(doc["state"],"Error diode check",17) == 0)
+    if(doc["state"] == "Error diode check")
       status = Diode_check_failed;
 
-    if(strncmp(doc["state"],"Error no ground",15) == 0)
+    if(doc["state"] == "Error no ground")
       status = No_ground;
 
-    if(strncmp(doc["state"],"Error bad ground",16) == 0)
+    if(doc["state"] == "Error bad ground")
       status = Bad_ground;
       
-    if(strncmp(doc["state"],"Error stuck relay",17) == 0)
+    if(doc["state"] == "Error stuck relay")
       status = Stuck_relay;
 
-    if(strncmp(doc["state"],"Error GFI",9) == 0)
+    if(doc["state"] == "Error GFI")
       status = GFI_failed;
 
-    if(strncmp(doc["state"],"Error over temp",15) == 0)
+    if(doc["state"] == "Error over temp")
       status = Over_temperature_shutdown;
       
-    if(strncmp(doc["state"],"Error over current",18) == 0)
+    if(doc["state"] == "Error over current")
       status = Over_current_shutdown;
     
     String carduid = doc["cardUid"];
@@ -347,10 +351,10 @@ std::pair<uint8_t*, uint8_t> jsonToBuffer(const char* s) {
 
     uint8_t ack_status = Ack_failed;
 
-    if(strncmp(doc["acknowledgement"], "SUCCESS", 7) == 0)
+    if(doc["acknowledgement"] == "SUCCESS")
       ack_status = Ack_success;
 
-    if(strncmp(doc["acknowledgement"], "FAILED", 7) == 0)
+    if(doc["acknowledgement"] == "FAILED")
       ack_status = Ack_failed;
 
     return wrapTransAck(status, cardUid, unitPrice, energy, amount, accumulated, ack_status);
