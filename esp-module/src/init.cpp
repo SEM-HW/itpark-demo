@@ -12,17 +12,20 @@ void nats_echo_handler(NATS::msg msg) {
 
 void nats_on_connect() {
   String s_topic = device.initDeviceTopic(false);
-  // s_topic += ".SET_PARKING_STATUS";
+  
   device.setNats(&nats);
   Serial.printf("Device topic: %s\n", s_topic.c_str());
   nats.subscribe(s_topic.c_str(), nats_echo_handler);
-  // s_topic.remove(35, 19);
+  
+  s_topic += ".SET_PARKING_STATUS";
+  nats.subscribe(s_topic.c_str(), nats_echo_handler);
+  s_topic.remove(35, 19);
 
-  // s_topic += ".SET_PRICE";
-  // nats.subscribe(s_topic.c_str(), nats_echo_handler);
-  // s_topic.remove(35, 10);
+  s_topic += ".SET_PRICE";
+  nats.subscribe(s_topic.c_str(), nats_echo_handler);
+  s_topic.remove(35, 10);
 
-  // s_topic += ".TRANS_INFO_RESPONSE";
-  // nats.subscribe(s_topic.c_str(), nats_echo_handler);
-  // s_topic.remove(35, 20);
+  s_topic += ".TRANS_INFO_RESPONSE";
+  nats.subscribe(s_topic.c_str(), nats_echo_handler);
+  s_topic.remove(35, 20);
 }

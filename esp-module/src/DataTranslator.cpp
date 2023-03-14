@@ -60,7 +60,7 @@ String evmStatus(uint8_t status)
   return "Unknown";
 }
 
-// TODO: CHANGE NUMERICALS VALUES TO STRING
+
 void buildResp_evse(uint8_t* buff, StaticJsonDocument<200>& doc)
 {
   doc["state"] = evmState(buff[4]);
@@ -149,6 +149,10 @@ std::pair<uint8_t*, uint8_t> wrapSetPrice(uint16_t price) {
   const int len = SetPriceLen + 8;
   static uint8_t ans[len] = { ABCD, SetPrice, SetPriceLen, highByte(price), lowByte(price), 0x00, 0x00, DCBA };
   insertCRC(ans, len);
+  for(int i = 0; i < len; i++)
+  {
+    Serial.println(ans[i],HEX);
+  }
   return std::make_pair(ans, len);
 }
 

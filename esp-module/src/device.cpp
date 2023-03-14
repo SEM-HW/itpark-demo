@@ -122,17 +122,17 @@ void Device::loop() {
       // );
 
       // mega.sendPacket(res.first, res.second);
-      nats->publish((this->topic += ".PARKING_STATE").c_str(), s);
+      nats->publish((this->topic + ".PARKING_STATE").c_str(), s);
     }
     else if (cmd == Commands::SendTransInfo)
-      nats->request((this->topic += ".TRANS_INFO_REQUEST").c_str(), s, requestCB);
+      nats->request((this->topic + ".TRANS_INFO_REQUEST").c_str(), s, requestCB);
     
     // EVM
     else if (RESP_EVSE_STATE == cmd)
-      nats->publish((this->topic += ".RESP_EVSE_STATE").c_str(), s);
+      nats->publish((this->topic + ".RESP_EVSE_STATE").c_str(), s);
     else if (RESP_CARD_READ == cmd)
-      nats->request((this->topic += ".RESP_CARD_READ").c_str(), s, requestCB);
+      nats->request((this->topic + ".RESP_CARD_READ").c_str(), s, requestCB);
     else if (RESP_CHARGING_INFO == cmd)
-      nats->publish((this->topic += ".RESP_CHARGING_INFO").c_str(), s);
+      nats->publish((this->topic + ".RESP_CHARGING_INFO").c_str(), s);
   }
 }
